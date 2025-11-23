@@ -12,181 +12,160 @@ const api = axios.create({
   },
 });
 
-// Simple local cache helpers
-const EVENTS_CACHE_KEY = 'events_cache_v2';
-const EVENTS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-type EventsCache = { ts: number; items: Event[] };
-
-export const getCachedEvents = (): Event[] | null => {
-  try {
-    const raw = localStorage.getItem(EVENTS_CACHE_KEY);
-    if (!raw) return null;
-    const obj = JSON.parse(raw) as EventsCache;
-    if (!obj?.ts || !Array.isArray(obj.items)) return null;
-    const fresh = Date.now() - obj.ts < EVENTS_CACHE_TTL_MS;
-    return fresh ? obj.items : null;
-  } catch { return null; }
-};
-
-const setCachedEvents = (items: Event[]) => {
-  try {
-    const obj: EventsCache = { ts: Date.now(), items };
-    localStorage.setItem(EVENTS_CACHE_KEY, JSON.stringify(obj));
-  } catch {}
-};
-
-const withTimeout = async <T>(p: Promise<T>, ms = 2000): Promise<T> => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  try {
-    // @ts-ignore extend axios config with signal via request interceptor
-    const resp: any = await (p as any);
-    clearTimeout(timer);
-    return resp;
-  } catch (e) {
-    clearTimeout(timer);
-    throw e;
-  }
-};
-
 // Mock data for events (until backend is connected)
 const mockEvents: Event[] = [
   {
-    id: 'sunburn2025',
-    title: 'Sunburn Music Festival – Goa 2025',
-    description: 'Asia\'s biggest music festival in Goa. Experience top EDM artists over 3 days!',
-    date: '2025-12-27T16:00:00+05:30',
-    location: 'Vagator Beach, Goa',
-    image: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?q=80&w=1600&auto=format&fit=crop',
-    price: 4999, // base = min category price in INR
-    availableTickets: 20000,
-    totalTickets: 20000,
-    category: 'Music',
+    id: '1',
+    title: 'Blockchain Developer Conference',
+    description: 'Join us for the premier blockchain developer conference featuring keynote speakers from Polygon, Ethereum, and other leading projects. Network with industry experts, attend workshops, and learn about the latest advancements in blockchain technology.',
+    date: '2025-06-15T09:00:00.000Z',
+    location: 'San Francisco, CA',
+    image: 'https://images.pexels.com/photos/7688336/pexels-photo-7688336.jpeg',
+    price: 0.05,
+    availableTickets: 120,
+    totalTickets: 300,
+    category: 'conference',
     isFeatured: true,
-    organizer: 'Sunburn',
-    categories: [
-      { name: 'General Pass (Per Day)', price: 4999, total: 15000, available: 15000 },
-      { name: 'VIP Pass (3 Days)', price: 12000, total: 5000, available: 5000 }
-    ]
+    organizer: 'Blockchain Developers Association'
   },
   {
-    id: 'indvsaus-t20-2026',
-    title: 'India vs Australia – T20 Match',
-    description: 'High-voltage India vs Australia T20 cricket match in Bengaluru! Limited seats.',
-    date: '2026-02-14T19:00:00+05:30',
-    location: 'M. Chinnaswamy Stadium, Bengaluru',
-    image: 'https://images.news18.com/ibnlive/uploads/2023/09/india-australia-1st-odi-live-score-ind-vs-aus-2023-09-2502936abd62ce512f51496b9d397181-16x9.jpg?impolicy=website&width=640&height=360',
-    price: 1500,
-    availableTickets: 35000,
-    totalTickets: 35000,
-    category: 'Sports',
+    id: '2',
+    title: 'Crypto Music Festival',
+    description: 'Experience the world\'s first fully blockchain-powered music festival. All tickets are NFTs, and artists will be releasing exclusive NFT collections during the event. Multiple stages, camping options, and food vendors available.',
+    date: '2025-07-22T16:00:00.000Z',
+    location: 'Austin, TX',
+    image: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg',
+    price: 0.15,
+    availableTickets: 850,
+    totalTickets: 2000,
+    category: 'music',
     isFeatured: true,
-    organizer: 'BCCI',
-    categories: [
-      { name: 'Stand Tickets', price: 1500, total: 20000, available: 20000 },
-      { name: 'Premium Pavilion', price: 4500, total: 12000, available: 12000 },
-      { name: 'Corporate Box', price: 12000, total: 3000, available: 3000 }
-    ]
+    organizer: 'Crypto Entertainment Group'
   },
   {
-    id: 'arijit-2026-mumbai',
-    title: 'Arijit Singh Live Concert',
-    description: 'An evening with Arijit Singh performing his best hits live at NSCI Dome.',
-    date: '2026-01-10T18:30:00+05:30',
-    location: 'NSCI Dome, Mumbai',
-    image: 'https://www.tottenhamhotspurstadium.com/media/xrhfsdgm/2v8a4968.jpg?width=960&height=582&rnd=133898957726470000',
-    price: 1200,
-    availableTickets: 10000,
-    totalTickets: 10000,
-    category: 'Concert',
+    id: '3',
+    title: 'NFT Art Exhibition',
+    description: 'Explore the intersection of traditional art and blockchain technology at our NFT Art Exhibition. Featured artists will be displaying physical works alongside their digital NFT counterparts. Interactive displays and VR experiences included.',
+    date: '2025-05-10T10:00:00.000Z',
+    location: 'New York, NY',
+    image: 'https://images.pexels.com/photos/2747449/pexels-photo-2747449.jpeg',
+    price: 0.02,
+    availableTickets: 75,
+    totalTickets: 200,
+    category: 'art',
     isFeatured: false,
-    organizer: 'BookMyShow',
-    categories: [
-      { name: 'Silver', price: 1200, total: 6000, available: 6000 },
-      { name: 'Gold', price: 2500, total: 3000, available: 3000 },
-      { name: 'Platinum', price: 6000, total: 1000, available: 1000 }
-    ]
+    organizer: 'Digital Art Collective'
   },
   {
-    id: 'puri-ratha-yatra-2026',
-    title: 'Ratha Yatra – Jagannath Puri Darshan Pass',
-    description: 'Special darshan passes for Ratha Yatra. General entry is free; priority darshan available.',
-    date: '2026-07-07T05:00:00+05:30',
-    location: 'Jagannath Temple, Puri, Odisha',
-    image: 'https://i0.wp.com/indiacurrents.com/wp-content/uploads/2025/06/Puri-Jagannath-Rath-Yatra.jpg?fit=1200%2C674&ssl=1',
-    price: 0,
-    availableTickets: 100000,
-    totalTickets: 100000,
-    category: 'Pilgrimage',
-    isFeatured: true,
-    organizer: 'Shree Jagannath Temple',
-    categories: [
-      { name: 'General Entry', price: 0, total: 90000, available: 90000 },
-      { name: 'Priority Darshan', price: 500, total: 10000, available: 10000 }
-    ]
-  },
-  {
-    id: 'indian-tech-summit-2026',
-    title: 'Indian Tech Summit 2026',
-    description: 'India\'s premier technology summit with talks, workshops, and networking over 3 days.',
-    date: '2026-03-15T09:00:00+05:30',
-    location: 'Pragati Maidan, New Delhi',
-    image: 'https://images.unsplash.com/photo-1531058020387-3be344556be6?q=80&w=1600&auto=format&fit=crop',
-    price: 800,
-    availableTickets: 8000,
-    totalTickets: 8000,
-    category: 'Conference',
+    id: '4',
+    title: 'Web3 Startup Pitch Competition',
+    description: 'Watch innovative Web3 startups compete for $100,000 in funding. Teams will pitch their ideas to a panel of industry judges and venture capitalists. Networking opportunities and refreshments provided.',
+    date: '2025-08-05T13:00:00.000Z',
+    location: 'Miami, FL',
+    image: 'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg',
+    price: 0.03,
+    availableTickets: 150,
+    totalTickets: 300,
+    category: 'business',
     isFeatured: false,
-    organizer: 'NASSCOM',
-    categories: [
-      { name: 'Student Pass', price: 800, total: 3000, available: 3000 },
-      { name: 'Regular', price: 2000, total: 4000, available: 4000 },
-      { name: 'VIP + Networking', price: 5000, total: 1000, available: 1000 }
-    ]
+    organizer: 'Web3 Founders Club'
+  },
+  {
+    id: '5',
+    title: 'Polygon Hackathon',
+    description: 'Put your blockchain development skills to the test in this 48-hour hackathon. Build decentralized applications on the Polygon network, compete for prizes, and receive mentorship from Polygon core developers.',
+    date: '2025-09-18T09:00:00.000Z',
+    location: 'Berlin, Germany',
+    image: 'https://images.pexels.com/photos/7103/writing-notes-idea-conference.jpg',
+    price: 0.01,
+    availableTickets: 50,
+    totalTickets: 200,
+    category: 'hackathon',
+    isFeatured: true,
+    organizer: 'Polygon Foundation'
+  },
+  {
+    id: '6',
+    title: 'Crypto Sports Cup',
+    description: 'Watch top e-sports teams compete in this blockchain-sponsored tournament. Games include League of Legends, Dota 2, and CS:GO. Fan tokens available for team support and exclusive merch.',
+    date: '2025-10-05T14:00:00.000Z',
+    location: 'Los Angeles, CA',
+    image: 'https://images.pexels.com/photos/159745/tablet-screen-devices-computer-159745.jpeg',
+    price: 0.05,
+    availableTickets: 1000,
+    totalTickets: 5000,
+    category: 'sports',
+    isFeatured: false,
+    organizer: 'Crypto Gaming League'
+  },
+  {
+    id: '7',
+    title: 'DeFi Summit',
+    description: 'Dive deep into the world of decentralized finance at the annual DeFi Summit. Learn about yield farming, lending protocols, stablecoins, and more from the industry\'s leading projects and developers.',
+    date: '2025-04-12T08:00:00.000Z',
+    location: 'Singapore',
+    image: 'https://images.pexels.com/photos/6476254/pexels-photo-6476254.jpeg',
+    price: 0.08,
+    availableTickets: 0,
+    totalTickets: 500,
+    category: 'finance',
+    isFeatured: false,
+    organizer: 'Global DeFi Association'
+  },
+  {
+    id: '8',
+    title: 'Blockchain Film Festival',
+    description: 'A showcase of films and documentaries about blockchain technology, cryptocurrency, and digital privacy. Special screening of "Trust No One: The Hunt for the Crypto King" followed by director Q&A.',
+    date: '2025-11-20T18:00:00.000Z',
+    location: 'Toronto, Canada',
+    image: 'https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg',
+    price: 0.02,
+    availableTickets: 200,
+    totalTickets: 300,
+    category: 'entertainment',
+    isFeatured: false,
+    organizer: 'Crypto Cinema Collective'
   }
 ];
 
-// Get all events (use backend with graceful fallback to mock)
+// Get all events
 export const getEvents = async (): Promise<Event[]> => {
   try {
-    // Try fast network with timeout
-    const response = await Promise.race([
-      api.get('/events'),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
-    ]) as any;
-    const data = response.data as Event[];
-    setCachedEvents(data);
-    return data;
-  } catch (error) {
-    const cached = getCachedEvents();
-    if (cached) return cached;
-    console.warn('Backend /events failed or timed out, falling back to mock data:', error);
+    // In a real app, this would call the backend API
+    // const response = await api.get('/events');
+    // return response.data;
+    
+    // For now, return mock data with a delay to simulate network request
     return new Promise(resolve => {
-      setTimeout(() => resolve(mockEvents), 200);
+      setTimeout(() => resolve(mockEvents), 800);
     });
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    throw error;
   }
 };
 
-// Get event by ID (use backend with graceful fallback to mock)
+// Get event by ID
 export const getEventById = async (id: string): Promise<Event> => {
   try {
-    const response = await Promise.race([
-      api.get(`/events/${id}`),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
-    ]) as any;
-    return response.data as Event;
+    // In a real app, this would call the backend API
+    // const response = await api.get(`/events/${id}`);
+    // return response.data;
+    
+    // For now, return mock data with a delay to simulate network request
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const event = mockEvents.find(e => e.id === id);
+        if (event) {
+          resolve(event);
+        } else {
+          reject(new Error('Event not found'));
+        }
+      }, 800);
+    });
   } catch (error) {
-    // Try cache first
-    const cached = getCachedEvents();
-    if (cached) {
-      const hit = cached.find(e => e.id === id);
-      if (hit) return hit;
-    }
-    console.warn('Backend /events/:id failed or timed out, falling back to mock data:', error);
-    const event = mockEvents.find(e => e.id === id);
-    if (!event) throw error;
-    return event;
+    console.error(`Error fetching event with id ${id}:`, error);
+    throw error;
   }
 };
 
@@ -217,55 +196,3 @@ export const setAuthToken = (token: string | null) => {
 
 // Export the API instance for direct use
 export default api;
-
-// Additional helpers for ticket flows
-export const purchaseTickets = async (payload: { eventId: string; wallet: string; quantity: number; price?: number; }) => {
-  const { data } = await api.post('/purchase', payload);
-  return data;
-};
-
-export const resellTicket = async (payload: { eventId: string; seller: string; buyer: string; price: number; }) => {
-  const { data } = await api.post('/resell', payload);
-  return data;
-};
-
-export const transferTicket = async (payload: { eventId: string; from: string; to: string; }) => {
-  const { data } = await api.post('/transfer', payload);
-  return data;
-};
-
-// Email OTP helpers
-export const sendOtp = async (email: string) => {
-  const { data } = await api.post('/auth/send-otp', { email });
-  return data as { sent: boolean; dev?: { code: string }; expiresInSec: number };
-};
-
-export const verifyOtp = async (email: string, code: string) => {
-  const { data } = await api.post('/auth/verify-otp', { email, code });
-  return data as { verified: boolean };
-};
-
-// Orders (history)
-export type OrderTx = {
-  id?: string;
-  type: 'purchase' | 'resell' | 'transfer';
-  eventId: string;
-  eventTitle?: string; // Added for convenience
-  from: string | null;
-  to: string | null;
-  amount: number;
-  quantity?: number;
-  categoryName?: string | null;
-  timestamp: string;
-  orderId?: string;
-};
-
-export const getOrders = async (email: string): Promise<OrderTx[]> => {
-  const { data } = await api.get('/orders', { params: { email } });
-  return data as OrderTx[];
-};
-
-export const getOrder = async (orderId: string): Promise<OrderTx> => {
-  const { data } = await api.get(`/orders/${orderId}`);
-  return data as OrderTx;
-};

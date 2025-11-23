@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-// Wallet/web3 removed for INR-only mode
+import { useWeb3 } from '../contexts/Web3Context';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Calendar, 
@@ -15,7 +15,7 @@ import {
   Info
 } from 'lucide-react';
 import { Event } from '../types/Event';
-import { getEventById, purchaseTickets } from '../services/api';
+import { getEventById } from '../services/api';
 
 const EventDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,12 +23,9 @@ const EventDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
+  const { isConnected, connectWallet } = useWeb3();
   const { currentUser } = useAuth();
-  const [processing, setProcessing] = useState(false);
-  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
   // Update page title when event loads
   useEffect(() => {
@@ -59,103 +56,26 @@ const EventDetailPage: React.FC = () => {
     fetchEvent();
   }, [id]);
 
-  // Set default category when event with categories loads
-  useEffect(() => {
-    if (event && Array.isArray(event.categories) && event.categories.length > 0) {
-      setSelectedCategory(event.categories[0].name);
-    }
-  }, [event]);
-
   const handleQuantityChange = (value: number) => {
     if (value < 1) return;
     if (event && value > event.availableTickets) return;
     setQuantity(value);
   };
 
-  const handlePurchase = async () => {
-    setActionMessage(null);
+  const handlePurchase = () => {
+    if (!isConnected) {
+      connectWallet();
+      return;
+    }
+    
     if (!currentUser) {
+      // Redirect to login
       window.location.href = `/login?redirect=/events/${id}`;
       return;
     }
-    if (!event) return;
-    // Open Razorpay-like popup
-    try {
-      const amount = (() => {
-        if (Array.isArray(event.categories) && event.categories.length > 0 && selectedCategory) {
-          const cat = event.categories.find(c => c.name === selectedCategory);
-          return (cat ? cat.price : event.price) * quantity;
-        }
-        return event.price * quantity;
-      })();
-      const w = 480, h = 640;
-      const y = window.top ? (window.top.outerHeight - h) / 2 : 100;
-      const x = window.top ? (window.top.outerWidth - w) / 2 : 100;
-      const url = `/payment-checkout?amount=${encodeURIComponent(amount)}&email=${encodeURIComponent(currentUser.email || '')}`;
-      const popup = window.open(url, 'rzp_popup', `width=${w},height=${h},left=${x},top=${y},resizable=yes,scrollbars=yes,status=no`);
-      if (!popup) {
-        setActionMessage('Please allow popups to proceed with payment.');
-        return;
-      }
-      const onMsg = async (e: MessageEvent) => {
-        try {
-          if (!e?.data || e.data.source !== 'razorpay') return;
-          window.removeEventListener('message', onMsg);
-          if (e.data.status === 'success') {
-            await onPaymentSuccess(e.data.paymentId);
-          } else {
-            setActionMessage('Payment failed');
-          }
-        } catch (err: any) {
-          setActionMessage(err?.message || 'Payment processing error');
-        }
-      };
-      window.addEventListener('message', onMsg);
-    } catch (err: any) {
-      setActionMessage(err?.message || 'Unable to start payment');
-    }
-  };
-
-  const onPaymentSuccess = async (_paymentId: string) => {
-    if (!event || !currentUser) return;
-    try {
-      setProcessing(true);
-      const identifier = currentUser.email as string;
-      const payload: any = { eventId: event.id, wallet: identifier, quantity };
-      if (Array.isArray(event.categories) && event.categories.length > 0) {
-        if (!selectedCategory) {
-          setActionMessage('Please select a ticket category');
-          return;
-        }
-        payload.categoryName = selectedCategory;
-      }
-      const resp = await purchaseTickets(payload);
-      const oid = resp?.orderId as string | undefined;
-      if (oid) setLastOrderId(oid);
-      setActionMessage('Purchase successful! Your ticket has been emailed.');
-      try { localStorage.removeItem('events_cache_v2'); } catch {}
-      // Optimistically reduce local availability for quick UI feedback
-      setEvent(prev => {
-        if (!prev) return prev;
-        if (Array.isArray(prev.categories) && prev.categories.length > 0 && selectedCategory) {
-          const cats = prev.categories.map(c => c.name === selectedCategory ? { ...c, available: Math.max(0, (c.available ?? c.total) - quantity) } : c);
-          const newAvail = Math.max(0, (prev.availableTickets ?? 0) - quantity);
-          return { ...prev, categories: cats, availableTickets: newAvail } as Event;
-        }
-        return { ...prev, availableTickets: Math.max(0, (prev.availableTickets ?? 0) - quantity) } as Event;
-      });
-      // Navigate to receipt for a real end of flow
-      if (resp?.orderId) {
-        setTimeout(() => {
-          window.location.href = `/orders/${resp.orderId}`;
-        }, 500);
-      }
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e.message || 'Purchase failed';
-      setActionMessage(msg);
-    } finally {
-      setProcessing(false);
-    }
+    
+    // Purchase logic would go here
+    alert(`Purchasing ${quantity} tickets for event: ${event?.title}`);
   };
 
   const handleShare = () => {
@@ -238,16 +158,7 @@ const EventDetailPage: React.FC = () => {
     );
   }
 
-  const formatINR = (val: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val);
-  const totalPrice = (() => {
-    if (!event) return 0;
-    if (Array.isArray(event.categories) && event.categories.length > 0 && selectedCategory) {
-      const cat = event.categories.find(c => c.name === selectedCategory);
-      const p = cat ? cat.price : event.price;
-      return p * quantity;
-    }
-    return event.price * quantity;
-  })();
+  const totalPrice = event.price * quantity;
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -369,26 +280,10 @@ const EventDetailPage: React.FC = () => {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-600 dark:text-gray-400">Price per ticket:</span>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {Array.isArray(event.categories) && event.categories.length > 0 && selectedCategory
-                    ? (() => { const cat = event.categories.find(c=>c.name===selectedCategory); const p = cat ? cat.price : event.price; return p === 0 ? 'Free' : `${formatINR(p)}`; })()
-                    : (event.price === 0 ? 'Free' : `${formatINR(event.price)}`)}
+                  {event.price === 0 ? 'Free' : `${event.price} MATIC`}
                 </span>
               </div>
-              {Array.isArray(event.categories) && event.categories.length > 0 && (
-                <div className="mb-3">
-                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Select Category</label>
-                  <select
-                    value={selectedCategory ?? ''}
-                    onChange={(e)=> setSelectedCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                  >
-                    {event.categories.map((c)=> (
-                      <option key={c.name} value={c.name}>{c.name} — {formatINR(c.price)} · {(typeof c.available==='number'? c.available : c.total)} left</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-                
+              
               <div className="flex justify-between items-center mb-4">
                 <span className="text-gray-600 dark:text-gray-400">Quantity:</span>
                 <div className="flex items-center">
@@ -399,9 +294,6 @@ const EventDetailPage: React.FC = () => {
                   >
                     -
                   </button>
-              {actionMessage && (
-                <div className="mt-3 text-sm text-gray-700 dark:text-gray-300">{actionMessage}</div>
-              )}
                   <input 
                     type="text" 
                     value={quantity}
@@ -426,23 +318,21 @@ const EventDetailPage: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <span className="font-medium text-gray-900 dark:text-white">Total:</span>
                 <span className="text-xl font-bold text-primary-600">
-                  {totalPrice === 0 ? 'Free' : `${formatINR(totalPrice)}`}
+                  {totalPrice === 0 ? 'Free' : `${totalPrice} MATIC`}
                 </span>
               </div>
-
-              {lastOrderId && (
-                <div className="mb-4 text-sm bg-success-50 dark:bg-success-900/20 text-success-700 dark:text-success-300 p-3 rounded">
-                  <div className="font-medium">Order ID: {lastOrderId}</div>
-                  <Link to={`/orders/${lastOrderId}`} className="underline text-success-700 dark:text-success-300">View Receipt</Link>
-                </div>
-              )}
               
               <button
                 onClick={handlePurchase}
                 disabled={event.availableTickets === 0}
                 className="w-full py-3 px-4 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {!currentUser ? (
+                {!isConnected ? (
+                  <>
+                    <Wallet className="h-5 w-5 mr-2" />
+                    Connect Wallet
+                  </>
+                ) : !currentUser ? (
                   <>
                     <Ticket className="h-5 w-5 mr-2" />
                     Sign In to Purchase
@@ -468,13 +358,12 @@ const EventDetailPage: React.FC = () => {
             <div className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 flex items-start">
               <Info className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-primary-500" />
               <p>
-                Tickets are issued to your account and can be transferred to another user if allowed by the organizer.
+                Tickets are delivered as NFTs to your connected wallet. Each NFT represents one ticket and can be transferred or resold on our marketplace.
               </p>
             </div>
           </div>
         </div>
       </div>
-      {/* Payment handled via popup window */}
     </div>
   );
 };

@@ -39,72 +39,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const auth = getAuth(app);
 
-  // Determine if Firebase config is properly set; otherwise use a local mock auth
-  const opts: any = (app as any)?.options || {};
-  const isMock = !opts?.projectId || String(opts.projectId).includes('your-project-id');
-
-  // Helpers for mock auth (multi-account support)
-  type MockUser = { uid: string; email: string; displayName?: string; password: string };
-  type MockUsers = Record<string, MockUser>; // key: emailLower
-  const USERS_KEY = 'mock_users';
-  const LEGACY_KEY = 'mock_user';
-  const LAST_USER_KEY = 'mock_last_user';
-  const readUsers = (): MockUsers => {
-    try {
-      // migrate legacy single user if present
-      const legacyRaw = localStorage.getItem(LEGACY_KEY);
-      const legacy = legacyRaw ? JSON.parse(legacyRaw) : null;
-      const raw = localStorage.getItem(USERS_KEY);
-      const obj: MockUsers = raw ? JSON.parse(raw) : {};
-      if (legacy && legacy.email) {
-        const emailLower = String(legacy.email).trim().toLowerCase();
-        if (!obj[emailLower]) {
-          obj[emailLower] = { uid: legacy.uid || 'mock-'+Date.now(), email: String(legacy.email).trim(), displayName: legacy.displayName, password: legacy.password || 'password123' };
-        }
-        localStorage.removeItem(LEGACY_KEY);
-        localStorage.setItem(USERS_KEY, JSON.stringify(obj));
-      }
-      return obj;
-    } catch { return {}; }
-  };
-  const writeUsers = (users: MockUsers) => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  };
-  const mapFirebaseError = (e: any): string => {
-    const code = e?.code || '';
-    if (code.includes('auth/invalid-email')) return 'Invalid email address';
-    if (code.includes('auth/user-not-found')) return 'No account found with this email';
-    if (code.includes('auth/wrong-password')) return 'Incorrect password';
-    if (code.includes('auth/email-already-in-use')) return 'Email already in use';
-    if (code.includes('auth/weak-password')) return 'Password should be at least 6 characters';
-    return e?.message || 'Authentication error. Please try again.';
-  };
-
   const signup = async (email: string, password: string, name: string) => {
     try {
       setError(null);
-      if (isMock) {
-        const e = String(email).trim();
-        const n = String(name).trim();
-        const p = String(password);
-        if (!e || !p) throw new Error('Email and password required');
-        const users = readUsers();
-        const key = e.toLowerCase();
-        if (users[key]) throw new Error('Email already in use');
-        const mock: MockUser = { uid: 'mock-' + Date.now(), email: e, displayName: n, password: p };
-        users[key] = mock;
-        writeUsers(users);
-        setCurrentUser(mock as any);
-        try { localStorage.setItem(LAST_USER_KEY, key); } catch {}
-        return;
-      }
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update profile with display name
       if (userCredential.user) {
-        await updateProfile(userCredential.user, { displayName: name });
+        await updateProfile(userCredential.user, {
+          displayName: name
+        });
       }
     } catch (error: any) {
       console.error('Signup error:', error);
-      setError(mapFirebaseError(error));
+      setError(error.message || 'Failed to create an account. Please try again.');
       throw error;
     }
   };
@@ -112,21 +60,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     try {
       setError(null);
-      if (isMock) {
-        const e = String(email).trim();
-        const p = String(password);
-        const users = readUsers();
-        const u = users[e.toLowerCase()];
-        if (!u) throw new Error('No account found with this email');
-        if (u.password !== p) throw new Error('Incorrect password');
-        setCurrentUser(u as any);
-        try { localStorage.setItem(LAST_USER_KEY, e.toLowerCase()); } catch {}
-        return;
-      }
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error('Login error:', error);
-      setError(mapFirebaseError(error));
+      setError(error.message || 'Failed to log in. Please check your credentials and try again.');
       throw error;
     }
   };
@@ -134,35 +71,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       setError(null);
-      if (isMock) {
-        setCurrentUser(null);
-        try { localStorage.removeItem(LAST_USER_KEY); } catch {}
-        return;
-      }
       await signOut(auth);
     } catch (error: any) {
       console.error('Logout error:', error);
-      setError(mapFirebaseError(error));
+      setError(error.message || 'Failed to log out. Please try again.');
       throw error;
     }
   };
 
   useEffect(() => {
-    if (isMock) {
-      // Initialize from localStorage
-      const users = readUsers();
-      // Only restore session if a previously logged-in user is remembered
-      let remembered: string | null = null;
-      try { remembered = localStorage.getItem(LAST_USER_KEY); } catch {}
-      const user = remembered ? users[String(remembered).toLowerCase()] : undefined;
-      setCurrentUser(user ? (user as any) : null);
-      setLoading(false);
-      return;
-    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoading(false);
     });
+
     return unsubscribe;
   }, [auth]);
 
@@ -177,7 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

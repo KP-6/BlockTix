@@ -42,7 +42,7 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
         
         {/* Price tag */}
         <div className="absolute top-3 right-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-semibold shadow-sm">
-          {price === 0 ? 'Free' : new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(price)}
+          {price === 0 ? 'Free' : `${price} MATIC`}
         </div>
       </div>
       

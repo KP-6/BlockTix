@@ -70,7 +70,7 @@ const ContactPage: React.FC = () => {
                   </div>
                   <div className="ml-4">
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white">Email</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">support@blocktix.in</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">support@blocktix.example</p>
                   </div>
                 </div>
                 
@@ -80,7 +80,7 @@ const ContactPage: React.FC = () => {
                   </div>
                   <div className="ml-4">
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white">Phone</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">+91 98765 43210</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">+1 (555) 123-4567</p>
                   </div>
                 </div>
                 
@@ -91,9 +91,9 @@ const ContactPage: React.FC = () => {
                   <div className="ml-4">
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white">Office</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      91 Springboard, Koramangala<br />
-                      Bengaluru, Karnataka 560034<br />
-                      India
+                      123 Blockchain Way<br />
+                      San Francisco, CA 94107<br />
+                      United States
                     </p>
                   </div>
                 </div>
@@ -107,12 +107,12 @@ const ContactPage: React.FC = () => {
               
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Monday - Friday (IST):</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">9:30 AM - 6:30 PM</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Monday - Friday:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">9:00 AM - 6:00 PM</span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Saturday (IST):</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">10:00 AM - 2:00 PM</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Saturday:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">10:00 AM - 4:00 PM</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Sunday:</span>
@@ -164,7 +164,7 @@ const ContactPage: React.FC = () => {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        placeholder="Rahul Sharma"
+                        placeholder="John Doe"
                         required
                       />
                     </div>
@@ -179,7 +179,7 @@ const ContactPage: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        placeholder="rahul@example.in"
+                        placeholder="john@example.com"
                         required
                       />
                     </div>
@@ -195,7 +195,7 @@ const ContactPage: React.FC = () => {
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      placeholder="How can we help you? (e.g., Ticket issue, Payment)"
+                      placeholder="How can we help you?"
                     />
                   </div>
                   
@@ -209,7 +209,7 @@ const ContactPage: React.FC = () => {
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      placeholder="Your message here (you can write in English or Hindi)..."
+                      placeholder="Your message here..."
                       required
                     ></textarea>
                   </div>

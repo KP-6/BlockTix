@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { useWeb3 } from '../../contexts/Web3Context';
+import { Wallet, ArrowRight } from 'lucide-react';
 
 const CTASection: React.FC = () => {
-  // Wallet removed for INR-only mode
+  const { isConnected, connectWallet } = useWeb3();
 
   return (
     <section className="py-16 sm:py-24 bg-gradient-to-r from-primary-600 to-accent-600 text-white">
@@ -18,9 +19,23 @@ const CTASection: React.FC = () => {
             </p>
             
             <div className="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+              {!isConnected && (
+                <button 
+                  onClick={connectWallet}
+                  className="inline-flex items-center justify-center px-6 py-3 bg-white text-primary-700 text-base font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <Wallet className="h-5 w-5 mr-2" />
+                  Connect Wallet
+                </button>
+              )}
+              
               <Link 
                 to="/events" 
-                className={`inline-flex items-center justify-center px-6 py-3 border border-white text-white bg-transparent hover:bg-white/10 text-base font-medium rounded-lg transition-colors`}
+                className={`inline-flex items-center justify-center px-6 py-3 ${
+                  isConnected 
+                    ? 'bg-white text-primary-700 hover:bg-gray-100' 
+                    : 'border border-white text-white bg-transparent hover:bg-white/10'
+                } text-base font-medium rounded-lg transition-colors`}
               >
                 Browse Events
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -61,8 +76,8 @@ const CTASection: React.FC = () => {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-semibold">Secure & Transparent</h3>
-                  <p className="text-white/80">Safe INR payments with clear records</p>
+                  <h3 className="text-lg font-semibold">100% Secure</h3>
+                  <p className="text-white/80">Powered by Polygon blockchain</p>
                 </div>
               </div>
             </div>

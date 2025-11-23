@@ -12,10 +12,4 @@ export interface Event {
   category: string;
   isFeatured: boolean;
   organizer: string;
-  categories?: Array<{
-    name: string; // e.g., 'VIP', 'Standard'
-    price: number;
-    total: number;
-    available: number;
-  }>;
 }
