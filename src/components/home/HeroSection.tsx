@@ -1,11 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useWeb3 } from '../../contexts/Web3Context';
-import { Ticket, Wallet } from 'lucide-react';
+import { Ticket } from 'lucide-react';
 
 const HeroSection: React.FC = () => {
-  const { isConnected, connectWallet } = useWeb3();
-
   return (
     <section className="relative overflow-hidden">
       {/* Background with gradient overlay */}
@@ -42,16 +39,6 @@ const HeroSection: React.FC = () => {
               <Ticket className="h-5 w-5 mr-2" />
               Browse Events
             </Link>
-            
-            {!isConnected && (
-              <button 
-                onClick={connectWallet}
-                className="inline-flex items-center justify-center px-6 py-3 border border-white text-base font-medium rounded-lg text-white bg-transparent hover:bg-white/10 transition-colors"
-              >
-                <Wallet className="h-5 w-5 mr-2" />
-                Connect Wallet
-              </button>
-            )}
           </div>
           
           <div className="mt-8 flex items-center space-x-4 text-white/80 animate-fade-in" style={{ animationDelay: '0.4s' }}>
