@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { sendOtp, verifyOtp } from '../services/api';
 
 const SignupPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -10,6 +11,10 @@ const SignupPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpInfo, setOtpInfo] = useState<string | null>(null);
   const { signup, error: authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,7 +44,54 @@ const SignupPage: React.FC = () => {
       setFormError('Passwords do not match');
       return false;
     }
+    if (!otpVerified) {
+      setFormError('Please verify the OTP sent to your email before creating the account');
+      return false;
+    }
     return true;
+  };
+
+  const handleSendOtp = async () => {
+    setFormError(null);
+    setOtpInfo(null);
+    const e = email.trim();
+    if (!e) { setFormError('Please enter your email to receive OTP'); return; }
+    try {
+      setLoading(true);
+      const resp = await sendOtp(e);
+      setOtpSent(true);
+      if (resp.dev?.code) {
+        setOtpInfo(`Dev mode OTP: ${resp.dev.code} (expires in ${resp.expiresInSec}s)`);
+      } else {
+        setOtpInfo(`OTP sent to ${e}. Expires in ${resp.expiresInSec}s.`);
+      }
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || err.message || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setFormError(null);
+    setOtpInfo(null);
+    const e = email.trim();
+    if (!e) { setFormError('Email is required'); return; }
+    if (!otp.trim()) { setFormError('Enter the 6-digit OTP'); return; }
+    try {
+      setLoading(true);
+      const resp = await verifyOtp(e, otp.trim());
+      if (resp.verified) {
+        setOtpVerified(true);
+        setOtpInfo('Email verified successfully. You can now create your account.');
+      } else {
+        setFormError('OTP verification failed');
+      }
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || err.message || 'OTP verification failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,10 +126,10 @@ const SignupPage: React.FC = () => {
           </div>
           
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 sm:p-8">
-            {(formError || authError) && (
+            {(formError || authError || otpInfo) && (
               <div className="mb-6 p-3 bg-error-50 dark:bg-error-900/20 text-error-700 dark:text-error-400 rounded-lg flex items-start">
                 <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-                <p className="text-sm">{formError || authError}</p>
+                <p className="text-sm">{formError || authError || otpInfo}</p>
               </div>
             )}
             
@@ -110,6 +162,34 @@ const SignupPage: React.FC = () => {
                   placeholder="Enter your email"
                   required
                 />
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={loading || !email.trim()}
+                    className="px-3 py-2 text-sm rounded-lg border border-primary-600 text-primary-700 hover:bg-primary-50 disabled:opacity-60"
+                  >
+                    {otpSent ? 'Resend OTP' : 'Send OTP'}
+                  </button>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e)=> setOtp(e.target.value)}
+                    placeholder="Enter 6-digit OTP"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={loading || !otp.trim()}
+                    className={`px-3 py-2 text-sm rounded-lg ${otpVerified ? 'bg-success-600 text-white' : 'bg-primary-600 text-white hover:bg-primary-700'} disabled:opacity-60`}
+                  >
+                    {otpVerified ? 'Verified' : 'Verify'}
+                  </button>
+                </div>
               </div>
               
               <div>
@@ -166,9 +246,25 @@ const SignupPage: React.FC = () => {
               >
                 {loading ? (
                   <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white\" xmlns="http://www.w3.org/2000/svg\" fill="none\" viewBox="0 0 24 24">
-                      <circle className="opacity-25\" cx="12\" cy="12\" r="10\" stroke="currentColor\" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
                     Creating Account...
                   </div>

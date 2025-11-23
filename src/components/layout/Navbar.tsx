@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useWeb3 } from '../../contexts/Web3Context';
 import { useAuth } from '../../contexts/AuthContext';
-import { Wallet, Ticket, User, Menu, X } from 'lucide-react';
-import WalletModal from '../wallet/WalletModal';
+import { Ticket, User, Menu, X } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const { isConnected, account, balance } = useWeb3();
+  // Wallet removed for INR-only mode
   const { currentUser, logout } = useAuth();
   const location = useLocation();
 
@@ -36,9 +33,7 @@ const Navbar: React.FC = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const toggleWalletModal = () => {
-    setIsWalletModalOpen(!isWalletModalOpen);
-  };
+  // Wallet modal removed
 
   const handleLogout = async () => {
     try {
@@ -95,27 +90,9 @@ const Navbar: React.FC = () => {
               </Link>
             </nav>
 
-            {/* Actions */}
+            {/* Actions (auth only) */}
             <div className="hidden md:flex items-center space-x-4">
-              {isConnected ? (
-                <button 
-                  onClick={toggleWalletModal}
-                  className="flex items-center px-3 py-2 text-sm rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
-                >
-                  <Wallet className="h-4 w-4 mr-2" />
-                  <span className="hidden xl:inline mr-1">{account?.substring(0, 6)}...{account?.substring(account.length - 4)}</span>
-                  <span className="text-xs px-2 py-0.5 bg-primary-100 rounded-full">{balance} MATIC</span>
-                </button>
-              ) : (
-                <button 
-                  onClick={toggleWalletModal}
-                  className="flex items-center px-3 py-2 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
-                >
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Connect Wallet
-                </button>
-              )}
-
+              <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">INR</span>
               {currentUser ? (
                 <div className="relative group">
                   <button className="flex items-center px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
@@ -123,6 +100,18 @@ const Navbar: React.FC = () => {
                     <span className="max-w-[100px] truncate">{currentUser.displayName || currentUser.email}</span>
                   </button>
                   <div className="absolute right-0 mt-2 w-48 py-2 bg-white dark:bg-gray-800 rounded-md shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                    <Link 
+                      to="/orders"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      My Orders
+                    </Link>
+                    <Link 
+                      to="/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      My Dashboard
+                    </Link>
                     <button 
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -198,33 +187,27 @@ const Navbar: React.FC = () => {
             </nav>
 
             <div className="flex flex-col space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              {isConnected ? (
-                <button 
-                  onClick={toggleWalletModal}
-                  className="flex items-center justify-between p-3 text-sm rounded-lg bg-primary-50 text-primary-700"
-                >
-                  <div className="flex items-center">
-                    <Wallet className="h-4 w-4 mr-2" />
-                    <span>{account?.substring(0, 6)}...{account?.substring(account.length - 4)}</span>
-                  </div>
-                  <span className="text-xs px-2 py-0.5 bg-primary-100 rounded-full">{balance} MATIC</span>
-                </button>
-              ) : (
-                <button 
-                  onClick={toggleWalletModal}
-                  className="flex items-center justify-center p-3 text-sm rounded-lg bg-primary-600 text-white"
-                >
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Connect Wallet
-                </button>
-              )}
-
+              <div className="flex items-center justify-end">
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">INR</span>
+              </div>
               {currentUser ? (
                 <>
                   <div className="flex items-center p-3 text-sm rounded-lg bg-gray-100 dark:bg-gray-800">
                     <User className="h-4 w-4 mr-2" />
                     <span className="truncate">{currentUser.displayName || currentUser.email}</span>
                   </div>
+                  <Link 
+                    to="/orders"
+                    className="p-3 text-sm rounded-lg text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800"
+                  >
+                    My Orders
+                  </Link>
+                  <Link 
+                    to="/dashboard"
+                    className="p-3 text-sm rounded-lg text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800"
+                  >
+                    My Dashboard
+                  </Link>
                   <button 
                     onClick={handleLogout}
                     className="p-3 text-sm rounded-lg text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800"
@@ -256,8 +239,7 @@ const Navbar: React.FC = () => {
       {/* Spacer for fixed header */}
       <div className="h-16 sm:h-20"></div>
 
-      {/* Wallet Modal */}
-      <WalletModal isOpen={isWalletModalOpen} onClose={toggleWalletModal} />
+      {/* Wallet removed */}
     </>
   );
 };
