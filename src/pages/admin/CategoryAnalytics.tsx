@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getCategoryBreakdown } from '../../services/admin';
+import { getCategoryBreakdown, getRecentTransactions } from '../../services/admin';
 
 interface Row {
   eventId: string;
@@ -18,10 +18,38 @@ const CategoryAnalytics: React.FC = () => {
     const run = async () => {
       try {
         setLoading(true);
-        const data = await getCategoryBreakdown();
-        setRows(data);
+        let data = await getCategoryBreakdown();
+        // Fallback: if backend returns empty (e.g., dev mode without Firestore),
+        // derive breakdown from recent transactions endpoint.
+        if (!Array.isArray(data) || data.length === 0) {
+          const txs: any[] = await getRecentTransactions();
+          const acc: Record<string, Row> = {};
+          for (const t of txs) {
+            const key = `${t.eventId || 'unknown'}::${t.categoryName || 'none'}`;
+            if (!acc[key]) acc[key] = { eventId: t.eventId || 'unknown', categoryName: t.categoryName || null, purchases: 0, resales: 0, totalAmount: 0 };
+            if (t.type === 'purchase') acc[key].purchases += Number(t.quantity || 1);
+            if (t.type === 'resell') acc[key].resales += 1;
+            acc[key].totalAmount += Number(t.amount || 0);
+          }
+          data = Object.values(acc);
+        }
+        setRows(data as Row[]);
       } catch (e: any) {
-        setError(e?.response?.data?.message || e.message || 'Failed to load analytics');
+        try {
+          // Last-chance fallback: compute from recent transactions if categories call failed outright
+          const txs: any[] = await getRecentTransactions();
+          const acc: Record<string, Row> = {};
+          for (const t of txs) {
+            const key = `${t.eventId || 'unknown'}::${t.categoryName || 'none'}`;
+            if (!acc[key]) acc[key] = { eventId: t.eventId || 'unknown', categoryName: t.categoryName || null, purchases: 0, resales: 0, totalAmount: 0 };
+            if (t.type === 'purchase') acc[key].purchases += Number(t.quantity || 1);
+            if (t.type === 'resell') acc[key].resales += 1;
+            acc[key].totalAmount += Number(t.amount || 0);
+          }
+          setRows(Object.values(acc));
+        } catch (e2: any) {
+          setError(e2?.response?.data?.message || e?.response?.data?.message || e2?.message || e?.message || 'Failed to load analytics');
+        }
       } finally {
         setLoading(false);
       }
